@@ -1,0 +1,12 @@
+node_modules/
+.gradle/
+build/
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+# SPA build output is regenerated on every Gradle build
+backend/src/main/resources/public/
+# SPA dist tree
+frontend/dist/
+
