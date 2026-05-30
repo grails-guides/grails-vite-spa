@@ -1,13 +1,10 @@
-# SPDX-License-Identifier: Apache-2.0
 name: Grails 8 CI
 
 on:
   push:
-    branches:
-      - grails8
+    branches: [ grails8 ]
   pull_request:
-    branches:
-      - grails8
+    branches: [ grails8 ]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -15,42 +12,31 @@ concurrency:
 
 jobs:
   test:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - directory: complete
-            gradle-target: ':backend:test :backend:integrationTest'
-            node-version: '22'
-          - directory: initial/backend
-            gradle-target: 'test integrationTest'
-            node-version: ''   # no frontend build needed
-
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ${{ matrix.directory }}
-
+    name: complete/backend (test + integrationTest)
+    # Only complete/ has a Grails backend; initial/ is the frontend-only starting point.
     steps:
       - uses: actions/checkout@v4
 
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
+          distribution: temurin
           java-version: '21'
-          distribution: 'temurin'
 
-      - name: Set up Node.js
-        if: matrix.node-version != ''
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node-version }}
-
-      - name: Setup Gradle
+      - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Make gradlew executable
-        run: chmod +x gradlew
+      - name: Unit + integration tests
+        working-directory: complete/backend
+        run: |
+          chmod +x gradlew
+          ./gradlew test integrationTest --console=plain --stacktrace
 
-      - name: Run unit and integration tests
-        run: ./gradlew ${{ matrix.gradle-target }} --console=plain --stacktrace
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: complete/backend/build/reports/tests/
+          if-no-files-found: ignore
